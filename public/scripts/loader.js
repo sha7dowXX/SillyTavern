@@ -1,28 +1,60 @@
-const ELEMENT_ID = 'loader';
+import { loader } from './action-loader.js';
 
+/**
+ * Handle for the legacy loader created by showLoader().
+ * @type {import('./action-loader.js').ActionLoaderHandle|null}
+ */
+let legacyLoaderHandle = null;
+
+/**
+ * Shows the loader overlay.
+ *
+ * @deprecated Use `showActionLoader()` from action-loader.js instead.
+ * This function now creates a blocking action loader with no toast.
+ * The new system supports stacking multiple loaders and provides better control.
+ *
+ * @example
+ * // New recommended approach:
+ * import { showActionLoader } from './action-loader.js';
+ * const handle = showActionLoader({ message: 'Loading...' });
+ * // ... do work ...
+ * handle.hide();
+ */
 export function showLoader() {
-    const container = $('<div></div>').attr('id', ELEMENT_ID);
-    const loader = $('<div></div>').attr('id', 'load-spinner').addClass('fa-solid fa-gear fa-spin fa-3x');
-    container.append(loader);
-    $('body').append(container);
+    // Hide any existing legacy loader first to maintain old behavior
+    if (legacyLoaderHandle && legacyLoaderHandle.isActive) {
+        legacyLoaderHandle.hide();
+    }
 
+    // Create a blocking loader with no toast (matches old behavior)
+    legacyLoaderHandle = loader.show({
+        slug: 'legacy-loader',
+        blocking: true,
+        toastMode: loader.ToastMode.NONE,
+    });
 }
 
-export function hideLoader() {
-    //Sets up a 2-step animation. Spinner blurs/fades out, and then the loader shadow does the same.
-    $('#load-spinner').on('transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd', function () {
-        //console.log('FADING BLUR SCREEN')
-        $(`#${ELEMENT_ID}`)
-            .animate({ opacity: 0 }, 300, function () {
-                //console.log('REMOVING LOADER')
-                $(`#${ELEMENT_ID}`).remove();
-            });
-    });
+/**
+ * Hides the loader overlay.
+ *
+ * @deprecated Use `hideActionLoader()` or `handle.hide()` from action-loader.js instead.
+ * This function now hides the legacy loader created by showLoader().
+ *
+ * @example
+ * // New recommended approach:
+ * import { showActionLoader } from './action-loader.js';
+ * const handle = showActionLoader({ message: 'Loading...' });
+ * // ... do work ...
+ * await handle.hide();
+ *
+ * @returns {Promise<void>}
+ */
+export async function hideLoader() {
+    if (!legacyLoaderHandle || !legacyLoaderHandle.isActive) {
+        console.warn('There is no loader showing to hide');
+        return Promise.resolve();
+    }
 
-    //console.log('BLURRING SPINNER')
-    $('#load-spinner')
-        .css({
-            'filter': 'blur(15px)',
-            'opacity': '0',
-        });
+    await legacyLoaderHandle.hide();
+    legacyLoaderHandle = null;
 }

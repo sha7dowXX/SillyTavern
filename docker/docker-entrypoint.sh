@@ -1,38 +1,99 @@
 #!/bin/sh
 
-# Initialize missing user files
-IFS="," RESOURCES="assets,backgrounds,user,context,instruct,QuickReplies,movingUI,themes,characters,chats,groups,group chats,User Avatars,worlds,OpenAI Settings,NovelAI Settings,KoboldAI Settings,TextGen Settings"
-for R in $RESOURCES; do
-  if [ ! -e "config/$R" ]; then
-    echo "Resource not found, copying from defaults: $R"
-    cp -r "public/$R.default" "config/$R"
-  fi
+# Function to handle startup logic (Config check + init + Start)
+start_sillytavern() {
+    local PREFIX="$1"
+    shift # Remove the first argument (PREFIX) so $@ contains the rest
+
+    # Config Check
+    if [ ! -e "config/config.yaml" ]; then
+        echo "Resource not found, copying from defaults: config.yaml"
+        $PREFIX cp "default/config.yaml" "config/config.yaml"
+    fi
+
+    # Execute init script to auto-populate config.yaml with missing values
+    $PREFIX npm run init
+
+    # Start the server
+    exec $PREFIX node server.js --listen "$@"
+}
+
+# Dirs that MUST be present at this point (e.g for volumeless docker runs).
+# Please update list, if in the future a related perm issue appear.
+CORE_DIRS="config data plugins public/scripts/extensions/third-party backups"
+
+# Mounted Volumes (External)
+# Parse mounts, handling files vs directories
+RAW_MOUNTS=$(awk -v app_path="/home/node/app" '$2 ~ "^" app_path {print $2}' /proc/mounts)
+MOUNTED_DIRS=""
+
+for mount in $RAW_MOUNTS; do
+    if [ -f "$mount" ]; then
+        # If it is a mounted file (e.g. cert.pem), we want to check its PARENT directory
+        # so that the app can write adjacent files (e.g. key.pem).
+        PARENT_DIR=$(dirname "$mount")
+
+        # Performance Safety: If the file is in the root of the app,
+        # we do NOT add the parent (App Root), or we will recursively scan the whole app.
+        [ "$PARENT_DIR" != "/home/node/app" ] && MOUNTED_DIRS="$MOUNTED_DIRS $PARENT_DIR" || MOUNTED_DIRS="$MOUNTED_DIRS $mount"
+    else
+        # It is a directory, add it directly
+        MOUNTED_DIRS="$MOUNTED_DIRS $mount"
+    fi
 done
 
-if [ ! -e "config/config.yaml" ]; then
-    echo "Resource not found, copying from defaults: config.yaml"
-    cp -r "default/config.yaml" "config/config.yaml"
+# Combine dirs for checks
+CHECK_DIRS=$(echo "$CORE_DIRS $MOUNTED_DIRS" | tr ' ' '\n' | sort -u)
+
+# Ensure the needed directories exist
+for dir in $CHECK_DIRS; do
+    if [ ! -e "$dir" ]; then
+        echo "Creating missing directory: $dir"
+        mkdir -p "$dir" 2>/dev/null || echo "Warning: Could not create $dir" >&2
+    fi
+done
+
+# Mode Selection
+if [ "$(id -u)" = "0" ]; then
+    # Check if PUID/PGID variables are provided
+    if [ -n "$PUID" ] && [ -n "$PGID" ]; then
+        echo "Mode: PUID/PGID (UID:$PUID GID:$PGID)"
+
+        # Update the internal 'node' user to match requested IDs
+        groupmod -o -g "$PGID" node
+        usermod -o -u "$PUID" -g "$PGID" node
+
+        for dir in $CHECK_DIRS; do
+            if [ -d "$dir" ]; then
+                # Runs chown only if there is an mismatch
+                DIR_UID=$(stat -c '%u' "$dir")
+                DIR_GID=$(stat -c '%g' "$dir")
+
+                if [ "$DIR_UID" != "$PUID" ] || [ "$DIR_GID" != "$PGID" ]; then
+                    echo "(Detected mismatch) Adjusting permissions for: $dir."
+                    chown -R node:node "$dir" || echo "Warning: Failed to update permissions for '$dir'." >&2
+                fi
+            fi
+        done
+
+        # Fix config file specifically
+        chown node:node "config/config.yaml" 2>/dev/null
+
+        # Set execution prefix to run as 'node' user
+        EXEC_PREFIX="su-exec node:node"
+    else
+        # Default: Run as Root (original behavior)
+        echo "Mode: Default (Root)"
+        EXEC_PREFIX=""
+    fi
+
+else
+    # Non-Root Mode (Docker CLI --user flag)
+    echo "Mode: Strict Non-Root (UID: $(id -u))"
+    # We CANNOT auto-fix permissions in this mode because we lack privileges.
+    # Relying solely on the user configuring their host permissions correctly.
+    EXEC_PREFIX=""
 fi
 
-if [ ! -e "config/settings.json" ]; then
-    echo "Resource not found, copying from defaults: settings.json"
-    cp -r "default/settings.json" "config/settings.json"
-fi
-
-CONFIG_FILE="config.yaml"
-
-echo "Starting with the following config:"
-cat $CONFIG_FILE
-
-if grep -q "listen: false" $CONFIG_FILE; then
-  echo -e "\033[1;31mThe listen parameter is set to false. If you can't connect to the server, edit the \"docker/config/config.yaml\" file and restart the container.\033[0m"
-  sleep 5
-fi
-
-if grep -q "whitelistMode: true" $CONFIG_FILE; then
-  echo -e "\033[1;31mThe whitelistMode parameter is set to true. If you can't connect to the server, edit the \"docker/config/config.yaml\" file and restart the container.\033[0m"
-  sleep 5
-fi
-
-# Start the server
-exec node server.js
+# Calling function with the determined prefix
+start_sillytavern "$EXEC_PREFIX" "$@"

@@ -25,6 +25,8 @@ public/stats.json
 /docker/config
 /docker/user
 /docker/extensions
+/docker/data
+/docker/dist
 .DS_Store
 public/settings.json
 /thumbnails
@@ -44,4 +46,15 @@ access.log
 /vectors/
 /cache/
 public/css/user.css
+public/error/
 /plugins/
+/data
+/default/scaffold
+public/scripts/extensions/third-party
+/certs
+.aider*
+.env
+/StartDev.bat
+yarn.lock
+*.code-workspace
+test-results/

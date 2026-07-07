@@ -1,27 +1,49 @@
-const fs = require('fs');
-const path = require('path');
-const express = require('express');
-const sanitize = require('sanitize-filename');
-const jimp = require('jimp');
-const writeFileAtomicSync = require('write-file-atomic').sync;
-const { DIRECTORIES } = require('../constants');
-const { getConfigValue } = require('../util');
-const { jsonParser } = require('../express-common');
+import fs from 'node:fs';
+import path from 'node:path';
+
+import express from 'express';
+import sanitize from 'sanitize-filename';
+import { Jimp, JimpMime } from '../jimp.js';
+import { sync as writeFileAtomicSync } from 'write-file-atomic';
+import { imageSize as sizeOf } from 'image-size';
+
+import { getConfigValue, invalidateFirefoxCache } from '../util.js';
+import { getThumbnailResolution, isAnimatedWebP, isAnimatedApng, thumbnailDimensions as dimensions } from './image-metadata.js';
+import { ResizeStrategy } from '@jimp/plugin-resize';
+
+export const publicRouter = express.Router();
+export const apiRouter = express.Router();
+
+export const SKIPPED_EXTENSIONS = new Set(['.apng', '.mp4', '.webm', '.avi', '.mkv', '.flv', '.gif']);
+export const ALLOWED_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.tif', '.tiff', '.apng']);
+
+const thumbnailsEnabled = !!getConfigValue('thumbnails.enabled', true, 'boolean');
+const quality = Math.min(100, Math.max(1, parseInt(getConfigValue('thumbnails.quality', 95, 'number'))));
+const pngFormat = String(getConfigValue('thumbnails.format', 'jpg')).toLowerCase().trim() === 'png';
+
+/**
+ * @typedef {'bg' | 'avatar' | 'persona'} ThumbnailType
+ */
+
 
 /**
  * Gets a path to thumbnail folder based on the type.
- * @param {'bg' | 'avatar'} type Thumbnail type
+ * @param {import('../users.js').UserDirectoryList} directories User directories
+ * @param {ThumbnailType} type Thumbnail type
  * @returns {string} Path to the thumbnails folder
  */
-function getThumbnailFolder(type) {
+function getThumbnailFolder(directories, type) {
     let thumbnailFolder;
 
     switch (type) {
         case 'bg':
-            thumbnailFolder = DIRECTORIES.thumbnailsBg;
+            thumbnailFolder = directories.thumbnailsBg;
             break;
         case 'avatar':
-            thumbnailFolder = DIRECTORIES.thumbnailsAvatar;
+            thumbnailFolder = directories.thumbnailsAvatar;
+            break;
+        case 'persona':
+            thumbnailFolder = directories.thumbnailsPersona;
             break;
     }
 
@@ -30,18 +52,22 @@ function getThumbnailFolder(type) {
 
 /**
  * Gets a path to the original images folder based on the type.
- * @param {'bg' | 'avatar'} type Thumbnail type
+ * @param {import('../users.js').UserDirectoryList} directories User directories
+ * @param {ThumbnailType} type Thumbnail type
  * @returns {string} Path to the original images folder
  */
-function getOriginalFolder(type) {
+function getOriginalFolder(directories, type) {
     let originalFolder;
 
     switch (type) {
         case 'bg':
-            originalFolder = DIRECTORIES.backgrounds;
+            originalFolder = directories.backgrounds;
             break;
         case 'avatar':
-            originalFolder = DIRECTORIES.characters;
+            originalFolder = directories.characters;
+            break;
+        case 'persona':
+            originalFolder = directories.avatars;
             break;
     }
 
@@ -50,149 +76,237 @@ function getOriginalFolder(type) {
 
 /**
  * Removes the generated thumbnail from the disk.
- * @param {'bg' | 'avatar'} type Type of the thumbnail
+ * @param {import('../users.js').UserDirectoryList} directories User directories
+ * @param {ThumbnailType} type Type of the thumbnail
  * @param {string} file Name of the file
  */
-function invalidateThumbnail(type, file) {
-    const folder = getThumbnailFolder(type);
+export function invalidateThumbnail(directories, type, file) {
+    const folder = getThumbnailFolder(directories, type);
     if (folder === undefined) throw new Error('Invalid thumbnail type');
 
-    const pathToThumbnail = path.join(folder, file);
+    const pathToThumbnail = path.join(folder, sanitize(file));
 
     if (fs.existsSync(pathToThumbnail)) {
-        fs.rmSync(pathToThumbnail);
+        fs.unlinkSync(pathToThumbnail);
     }
 }
 
 /**
- * Generates a thumbnail for the given file.
- * @param {'bg' | 'avatar'} type Type of the thumbnail
- * @param {string} file Name of the file
- * @returns
+ * Generates or retrieves a thumbnail for a given file.
+ * @param {import('../users.js').UserDirectoryList} directories - User's directory configuration.
+ * @param {ThumbnailType} type - Type of thumbnail ('bg', 'avatar', 'persona').
+ * @param {string} file - The filename of the image.
+ * @param {boolean} [forceGenerate=false] - Whether to force generation even if a thumbnail exists.
+ * @param {boolean|null} [isKnownAnimated=null] - If true, skips generation. If false, assumes static. If null, checks.
+ * @returns {Promise<{path: string|null, aspectRatio: number|null, resolution: number|null}>} Path to thumbnail, its aspect ratio, and resolution.
  */
-async function generateThumbnail(type, file) {
-    let thumbnailFolder = getThumbnailFolder(type);
-    let originalFolder = getOriginalFolder(type);
+export async function generateThumbnail(directories, type, file, forceGenerate = false, isKnownAnimated = null) {
+    // If the caller has already determined the file is animated, skip processing.
+    if (isKnownAnimated) {
+        return { path: null, aspectRatio: null, resolution: null };
+    }
+
+    const thumbnailFolder = getThumbnailFolder(directories, type);
+    const originalFolder = getOriginalFolder(directories, type);
     if (thumbnailFolder === undefined || originalFolder === undefined) throw new Error('Invalid thumbnail type');
-
     const pathToCachedFile = path.join(thumbnailFolder, file);
-    const pathToOriginalFile = path.join(originalFolder, file);
-
-    const cachedFileExists = fs.existsSync(pathToCachedFile);
-    const originalFileExists = fs.existsSync(pathToOriginalFile);
-
-    // to handle cases when original image was updated after thumb creation
-    let shouldRegenerate = false;
-
-    if (cachedFileExists && originalFileExists) {
-        const originalStat = fs.statSync(pathToOriginalFile);
-        const cachedStat = fs.statSync(pathToCachedFile);
-
-        if (originalStat.mtimeMs > cachedStat.ctimeMs) {
-            //console.log('Original file changed. Regenerating thumbnail...');
-            shouldRegenerate = true;
-        }
-    }
-
-    if (cachedFileExists && !shouldRegenerate) {
-        return pathToCachedFile;
-    }
-
-    if (!originalFileExists) {
-        return null;
-    }
-
-    const imageSizes = { 'bg': [160, 90], 'avatar': [96, 144] };
-    const mySize = imageSizes[type];
 
     try {
-        let buffer;
+        const pathToOriginalFile = path.join(originalFolder, file);
 
-        try {
-            const quality = getConfigValue('thumbnailsQuality', 95);
-            const image = await jimp.read(pathToOriginalFile);
-            const imgType = type == 'avatar' && getConfigValue('avatarThumbnailsPng', false) ? 'image/png' : 'image/jpeg';
-            buffer = await image.cover(mySize[0], mySize[1]).quality(quality).getBufferAsync(imgType);
+        // Check if thumbnail already exists and return it if not forcing regeneration
+        if (!forceGenerate && fs.existsSync(pathToCachedFile)) {
+            try {
+                // Check if original image was updated after thumbnail creation
+                const originalFileExists = fs.existsSync(pathToOriginalFile);
+                if (originalFileExists) {
+                    const originalStat = fs.statSync(pathToOriginalFile);
+                    const cachedStat = fs.statSync(pathToCachedFile);
+
+                    if (originalStat.mtimeMs > cachedStat.ctimeMs) {
+                        // Original file changed, regenerate thumbnail
+                        forceGenerate = true;
+                    }
+                }
+
+                if (!forceGenerate) {
+                    const buffer = fs.readFileSync(pathToCachedFile);
+                    const fileDimensions = sizeOf(buffer);
+                    const ratio = (fileDimensions.height > 0) ? (fileDimensions.width / fileDimensions.height) : 1.0;
+                    // When a thumbnail exists, return the current resolution from config so the JSON can be updated.
+                    const resolution = getThumbnailResolution(type);
+                    return { path: pathToCachedFile, aspectRatio: ratio, resolution };
+                }
+            } catch (e) {
+                forceGenerate = true;
+            }
         }
-        catch (inner) {
-            console.warn(`Thumbnailer can not process the image: ${pathToOriginalFile}. Using original size`);
-            buffer = fs.readFileSync(pathToOriginalFile);
+        if (!fs.existsSync(pathToOriginalFile)) {
+            console.error(`[generateThumbnail] Cannot generate thumbnail, original file not found: ${pathToOriginalFile}`);
+            return { path: null, aspectRatio: null, resolution: null };
         }
 
-        writeFileAtomicSync(pathToCachedFile, buffer);
-    }
-    catch (outer) {
-        return null;
-    }
+        const fileExtension = path.extname(file).toLowerCase();
 
-    return pathToCachedFile;
+        // For WebP files, we must check if they are animated, as Jimp cannot process them.
+        // If isKnownAnimated is false, we assume the caller knows it is static and skip this check.
+        if (fileExtension === '.webp' && isKnownAnimated !== false) {
+            const buffer = fs.readFileSync(pathToOriginalFile);
+            const isAnimated = isAnimatedWebP(buffer);
+            if (isAnimated) {
+                // The client is expected to handle it.
+                return { path: null, aspectRatio: null, resolution: null };
+            }
+        }
+
+        // For PNG files, check if they are actually APNGs.
+        if (fileExtension === '.png' && isKnownAnimated !== false) {
+            const buffer = fs.readFileSync(pathToOriginalFile);
+            const isAnimated = isAnimatedApng(buffer);
+            if (isAnimated) {
+                // The client is expected to handle it.
+                return { path: null, aspectRatio: null, resolution: null };
+            }
+        }
+
+        if (SKIPPED_EXTENSIONS.has(fileExtension)) {
+            return { path: null, aspectRatio: null, resolution: null };
+        }
+
+        // Process the image to generate thumbnail
+        const result = await processSingleImage(file, originalFolder, thumbnailFolder, type);
+        if (result.success) {
+            return { path: pathToCachedFile, aspectRatio: result.aspectRatio ?? null, resolution: result.resolution ?? null };
+        } else {
+            console.error(`[generateThumbnail] Failed to process image ${file}:`, result.error);
+            return { path: null, aspectRatio: null, resolution: null };
+        }
+    } catch (error) {
+        console.error(`[generateThumbnail] Unexpected error processing ${file}:`, error);
+        return { path: null, aspectRatio: null, resolution: null };
+    }
 }
 
 /**
- * Ensures that the thumbnail cache for backgrounds is valid.
- * @returns {Promise<void>} Promise that resolves when the cache is validated
+ * Processes a single image to generate its thumbnail.
+ * @param {string} file - The filename of the image.
+ * @param {string} originalFolder - Path to the original image folder.
+ * @param {string} thumbnailFolder - Path to the thumbnail output folder.
+ * @param {ThumbnailType} type - The type of thumbnail to generate.
+ * @returns {Promise<{success: boolean, filename?: string, error?: string, aspectRatio?: number, resolution?: number}>} Result of the processing.
  */
-async function ensureThumbnailCache() {
-    const cacheFiles = fs.readdirSync(DIRECTORIES.thumbnailsBg);
+async function processSingleImage(file, originalFolder, thumbnailFolder, type) {
+    const pathToOriginalFile = path.join(originalFolder, file);
+    const pathToCachedFile = path.join(thumbnailFolder, file);
 
-    // files exist, all ok
-    if (cacheFiles.length) {
-        return;
+    try {
+        const fileBuffer = fs.readFileSync(pathToOriginalFile);
+        const image = await Jimp.read(fileBuffer);
+
+        // Calculate aspect ratio from original image dimensions
+        const originalWidth = image.bitmap.width;
+        const originalHeight = image.bitmap.height;
+        const aspectRatio = (originalHeight > 0) ? (originalWidth / originalHeight) : 1.0;
+
+        const thumbImage = image.clone();
+        const thumbnailResolution = getThumbnailResolution(type);
+
+        if (type === 'bg') {
+            const [configWidth, configHeight] = dimensions[type];
+            const targetPixelArea = configWidth * configHeight;
+
+            // Calculate thumbnail dimensions to maintain target pixel area while preserving aspect ratio
+            // For aspect ratio w:h, if area = w*h and ratio = w/h, then:
+            // w = sqrt(area * ratio) and h = sqrt(area / ratio)
+            const thumbWidth = Math.round(Math.sqrt(targetPixelArea * aspectRatio));
+            const thumbHeight = Math.round(Math.sqrt(targetPixelArea / aspectRatio));
+
+            thumbImage.resize({ w: thumbWidth, h: thumbHeight, mode: ResizeStrategy.BILINEAR });
+        } else if (type === 'avatar' || type === 'persona') {
+            // Crop and resize to fixed dimensions
+            const [configWidth, configHeight] = dimensions[type];
+            thumbImage.cover({ w: configWidth, h: configHeight });
+        }
+
+        const buffer = pngFormat
+            ? await thumbImage.getBuffer(JimpMime.png)
+            : await thumbImage.getBuffer(JimpMime.jpeg, { quality: quality, jpegColorSpace: 'ycbcr' });
+
+        writeFileAtomicSync(pathToCachedFile, buffer);
+
+        return { success: true, aspectRatio, resolution: thumbnailResolution };
+    } catch (error) {
+        console.warn(`[Thumbnails] Failed to process image ${file}:`, error);
+        return { success: false, filename: file, error: error.message };
     }
-
-    console.log('Generating thumbnails cache. Please wait...');
-
-    const bgFiles = fs.readdirSync(DIRECTORIES.backgrounds);
-    const tasks = [];
-
-    for (const file of bgFiles) {
-        tasks.push(generateThumbnail('bg', file));
-    }
-
-    await Promise.all(tasks);
-    console.log(`Done! Generated: ${bgFiles.length} preview images`);
 }
 
-const router = express.Router();
+/**
+ * Public endpoint for serving thumbnails.
+ * @param {express.Request} request - The Express request object.
+ * @param {express.Response} response - The Express response object.
+ */
+publicRouter.get('/', async function (request, response) {
+    try {
+        const { file: rawFile, type, animated } = request.query;
+        if (typeof rawFile !== 'string' || typeof type !== 'string') return response.sendStatus(400);
+        if (!(type === 'bg' || type === 'avatar' || type === 'persona')) {
+            return response.sendStatus(400);
+        }
 
-// Important: This route must be mounted as '/thumbnail'. It is used in the client code and saved to chat files.
-router.get('/', jsonParser, async function (request, response) {
-    if (typeof request.query.file !== 'string' || typeof request.query.type !== 'string') return response.sendStatus(400);
+        const file = sanitize(rawFile);
+        if (file !== rawFile) return response.sendStatus(403);
 
-    const type = request.query.type;
-    const file = sanitize(request.query.file);
+        const serveOriginal = () => {
+            const folder = getOriginalFolder(request.user.directories, type);
+            const pathToOriginalFile = path.resolve(path.join(folder, file));
+            if (!fs.existsSync(pathToOriginalFile)) return response.sendStatus(404);
+            invalidateFirefoxCache(pathToOriginalFile, request, response);
+            return response.sendFile(pathToOriginalFile);
+        };
 
-    if (!type || !file) {
-        return response.sendStatus(400);
-    }
+        if (!thumbnailsEnabled) {
+            return serveOriginal();
+        }
 
-    if (!(type == 'bg' || type == 'avatar')) {
-        return response.sendStatus(400);
-    }
+        const animatedEnabled = animated === 'true';
+        const fileExtension = path.extname(file).toLowerCase();
+        const isAnimatedFormat = SKIPPED_EXTENSIONS.has(fileExtension);
 
-    if (sanitize(file) !== file) {
-        console.error('Malicious filename prevented');
-        return response.sendStatus(403);
-    }
+        // Serve original for animated formats or GIFs
+        if (animatedEnabled && isAnimatedFormat) {
+            return serveOriginal();
+        }
 
-    if (getConfigValue('disableThumbnails', false) == true) {
-        let folder = getOriginalFolder(type);
-        if (folder === undefined) return response.sendStatus(400);
-        const pathToOriginalFile = path.join(folder, file);
-        return response.sendFile(pathToOriginalFile, { root: process.cwd() });
-    }
+        if (fileExtension === '.gif') {
+            return serveOriginal();
+        }
 
-    const pathToCachedFile = await generateThumbnail(type, file);
+        const thumbnailFolder = getThumbnailFolder(request.user.directories, type);
+        const pathToCachedFile = path.join(thumbnailFolder, file);
 
-    if (!pathToCachedFile) {
+        // Try to generate thumbnail if it doesn't exist
+        if (!fs.existsSync(pathToCachedFile)) {
+            const thumbResult = await generateThumbnail(request.user.directories, type, file, false);
+            // If generation failed (path is null), serve the original file
+            if (!thumbResult.path) {
+                return serveOriginal();
+            }
+        }
+
+        if (fs.existsSync(pathToCachedFile)) {
+            invalidateFirefoxCache(pathToCachedFile, request, response);
+            return response.sendFile(file, { root: thumbnailFolder, dotfiles: 'allow' });
+        }
+
+        // Send a 404 so the frontend can display a placeholder
         return response.sendStatus(404);
+    } catch (error) {
+        console.error('Failed getting thumbnail', error);
+        return response.sendStatus(500);
     }
-
-    return response.sendFile(pathToCachedFile, { root: process.cwd() });
 });
 
-module.exports = {
-    invalidateThumbnail,
-    ensureThumbnailCache,
-    router,
-};
+export const router = express.Router();
+router.use(publicRouter);
+router.use(apiRouter);

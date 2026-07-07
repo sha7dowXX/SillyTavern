@@ -1,7 +1,94 @@
 /*will apply to anything 1000px or less. this catches ipads, horizontal phones, and vertical phones)*/
 @media screen and (max-width: 1000px) {
-    #send_form.compact #leftSendForm, #send_form.compact #rightSendForm {
+
+    #UI-Theme-Block,
+    #UI-Customization,
+    #power-user-options-block,
+    #ContextSettings,
+    #InstructSettingsColumn,
+    #InstructSequencesColumn {
+        flex-basis: 100%;
+    }
+
+    #rm_button_panel_pin_div,
+    #lm_button_panel_pin_div {
+        display: none;
+    }
+
+    #rm_button_characters {
+        font-size: var(--topBarIconSize);
+    }
+
+    #CharListButtonAndHotSwaps {
+        align-items: center;
+    }
+
+    #send_form.compact #leftSendForm,
+    #send_form.compact #rightSendForm {
         flex-wrap: nowrap;
+        width: unset;
+    }
+
+    #sheldWidthToggleBlock {
+        display: none;
+    }
+
+    #bg_menu_content,
+    #bg_custom_content {
+        grid-template-columns: repeat(var(--bg-thumb-columns, 3), 1fr);
+    }
+
+    .bg_folder_grid {
+        grid-template-columns: repeat(var(--bg-thumb-columns, 3), 1fr);
+    }
+
+    .bg_folder_tile .bg_folder_tile_menu {
+        opacity: 0;
+        visibility: hidden;
+        transform: scale(0.9);
+    }
+
+    .bg_folder_tile:hover .bg_folder_tile_menu,
+    .bg_folder_tile:focus-within .bg_folder_tile_menu {
+        display: none;
+    }
+
+    .bg_folder_tile.mobile-menu-open .bg_folder_tile_menu {
+        display: flex;
+        opacity: 1;
+        visibility: visible;
+        transform: scale(1);
+        z-index: 4;
+    }
+
+    .bg_folder_tile.mobile-menu-open .mobile-only-menu-toggle {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .bg_folder_tile .mobile-only-menu-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 30px;
+        height: 30px;
+        background-color: rgba(0, 0, 0, 0.4);
+        color: white;
+        border-radius: 6px;
+        z-index: 3;
+        cursor: pointer;
+        backdrop-filter: blur(2px);
+    }
+
+    .bg_folder_tile .jg-button {
+        width: 30px;
+        height: 30px;
+    }
+
+    .bg_list {
         width: unset;
     }
 
@@ -9,8 +96,85 @@
         font-size: 15px;
     }
 
-    .mes_text img {
-        width: 100%;
+    #Backgrounds .bg_example .BGSampleTitle {
+        opacity: 1;
+        bottom: 0px;
+    }
+
+    .bg_example:hover .jg-menu,
+    .bg_example:focus-within .jg-menu {
+        display: none;
+    }
+
+    .bg_example.mobile-menu-open .jg-menu {
+        display: flex;
+        z-index: 4;
+    }
+
+    .bg_example.mobile-menu-open .mobile-only-menu-toggle {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .bg_example .mobile-only-menu-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 30px;
+        height: 30px;
+        background-color: rgba(0, 0, 0, 0.4);
+        color: white;
+        border-radius: 6px;
+        z-index: 3;
+        cursor: pointer;
+        backdrop-filter: blur(2px);
+    }
+
+    .bg_example .jg-button {
+        width: 30px;
+        height: 30px;
+    }
+
+    #background_fitting {
+        max-width: 6em;
+    }
+
+    #Backgrounds.drawer-content.openDrawer.bg-drawer-layout {
+        width: 100dvw;
+        max-width: 100dvw;
+    }
+
+    #bg_tabs .bg_tabs_list .bg_tab_button {
+        min-width: 6em;
+    }
+
+    #add_background_button_top>span,
+    #auto_background>span,
+    #bg_add_folder_button>span,
+    #bg_selection_mode_button>span:not(#bg_group_select_count),
+    #bg_group_add_to_folder_button>span,
+    #bg_folder_remove_selected_button>span {
+        display: none;
+    }
+
+    #bg_group_select_count:not(:empty) {
+        display: inline !important;
+    }
+
+    .bg_folder_breadcrumb {
+        gap: 5px;
+    }
+
+    .bg_folder_breadcrumb .expander {
+        min-width: 0;
+    }
+
+    #bg_current_folder_name {
+        min-width: 0;
+        flex: 1 1 auto;
     }
 
     #extensions_settings,
@@ -28,15 +192,22 @@
         z-index: 30;
         overflow: hidden;
         right: 0;
-        top: 50px;
-        aspect-ratio: 2 / 3;
         width: fit-content;
         max-height: calc(60vh - 60px);
-        max-height: calc(60svh - 60px);
+        max-height: calc(60dvh - 60px);
         max-width: 90vw;
-        max-width: 90svw;
+        max-width: 90dvw;
         left: 50%;
-        transform: translateX(-50%);
+        top: 50%;
+        transform: translateX(-50%) translateY(-50%);
+        align-items: center;
+        justify-content: center;
+        height: fit-content;
+        width: 100%;
+    }
+
+    .zoomed_avatar .dragClose {
+        display: unset;
     }
 
     /* .world_entry_thin_controls, */
@@ -80,7 +251,6 @@
         touch-action: none;
         overflow: hidden;
         position: fixed;
-
     }
 
     .world_entry_form_control {
@@ -89,13 +259,18 @@
 
     .drawer-content {
         min-width: unset;
-        width: 100%;
+        width: 100dvw;
         max-height: calc(100vh - 45px);
-        max-height: calc(100svh - 45px);
+        max-height: calc(100dvh - 45px);
         position: fixed;
         left: 0;
         top: 5px;
         border: 1px solid var(--SmartThemeBorderColor);
+    }
+
+    .drawer-content .floating_panel_maximize,
+    .drawer-content .inline-drawer-maximize {
+        display: none;
     }
 
     #select_chat_popup {
@@ -105,19 +280,24 @@
         max-width: unset;
     }
 
+    #wiActivationSettings,
+    #wiTopBlock {
+        flex-direction: column;
+    }
+
     #top-settings-holder,
     #top-bar {
         position: fixed;
         width: 100vw;
-        width: 100svw;
+        width: 100dvw;
     }
 
     #bg1,
     #bg_custom {
         height: 100vh !important;
-        height: 100svh !important;
+        height: 100dvh !important;
         width: 100vw !important;
-        width: 100svw !important;
+        width: 100dvw !important;
         background-position: center;
 
     }
@@ -125,16 +305,10 @@
 
     #sheld,
     #character_popup,
-    .drawer-content
-
-    /* ,
-    #world_popup  */
-        {
-        /*max-height: calc(100vh - 36px);
-        max-height: calc(100svh - 36px);*/
-        width: 100% !important;
+    .drawer-content {
+        width: 100dvw !important;
         margin: 0 auto;
-        max-width: 100%;
+        max-width: 100dvw;
         left: 0 !important;
         resize: none !important;
         top: var(--topBarBlockSize);
@@ -190,8 +364,6 @@
 
     }
 
-    #showRawPrompt,
-    #copyPromptToClipboard,
     #groupCurrentMemberPopoutButton,
     #summaryExtensionPopoutButton {
         display: none;
@@ -201,12 +373,14 @@
     #left-nav-panel,
     #floatingPrompt,
     #cfgConfig,
-    #logprobsViewer {
+    #logprobsViewer,
+    #movingDivs>div {
+        /* 100vh are fallback units for browsers that don't support dvh */
         height: calc(100vh - 45px);
-        height: calc(100svh - 45px);
-        min-width: 100% !important;
-        width: 100% !important;
-        max-width: 100% !important;
+        height: calc(100dvh - 45px);
+        min-width: 100dvw !important;
+        width: 100dvw !important;
+        max-width: 100dvw !important;
         overflow-y: hidden;
         border-left: 1px solid var(--SmartThemeBorderColor);
         border-right: 1px solid var(--SmartThemeBorderColor);
@@ -215,11 +389,27 @@
         top: var(--topBarBlockSize) !important;
         left: 0 !important;
         backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
+
+        @starting-style {
+            height: 0;
+        }
     }
+
+    #left-nav-panel:not(.openDrawer),
+    #right-nav-panel:not(.openDrawer) {
+        height: 0;
+    }
+
+    /*
+    #right-nav-panel {
+        padding-right: 15px;
+    }
+    */
 
     #floatingPrompt,
     #cfgConfig,
-    #logprobsViewer {
+    #logprobsViewer,
+    #movingDivs>div {
         height: min-content;
     }
 
@@ -256,9 +446,9 @@
 
     body.waifuMode #sheld {
         height: 40vh;
-        height: 40svh;
+        height: 40dvh;
         top: 60vh;
-        top: 60svh;
+        top: 60dvh;
         bottom: 0 !important;
     }
 
@@ -288,38 +478,32 @@
         object-fit: cover;
     }
 
+    body.waifuMode .zoomed_avatar_container {
+        height: 100%;
+    }
+
     body.waifuMode .zoomed_avatar {
         width: fit-content;
         max-height: calc(60vh - 60px);
-        max-height: calc(60svh - 60px);
+        max-height: calc(60dvh - 60px);
         max-width: 90vw;
-        max-width: 90svw;
+        max-width: 90dvw;
     }
 
     .scrollableInner {
         overflow-y: auto;
         overflow-x: hidden;
         max-height: calc(100vh - 90px);
-        max-height: calc(100svh - 90px);
+        max-height: calc(100dvh - 90px);
     }
 
     .horde_multiple_hint {
         display: none;
     }
 
-    .bg_list {
-        width: unset;
-    }
-}
-
-@media screen and (min-width: 1001px) {
-
-    #PygOverrides,
-    #ContextFormatting,
-    #UI-Theme-Block,
-    #UI-Customization,
-    #power-user-options-block {
-        flex: 1;
+    select[multiple] {
+        max-height: 50px;
+        overflow-y: auto;
     }
 }
 
@@ -335,15 +519,18 @@
     }
 
     body:not(.waifuMode) .zoomed_avatar {
-
-        width: fit-content;
         max-height: calc(60vh - 60px);
-        max-height: calc(60svh - 60px);
+        max-height: calc(60dvh - 60px);
         max-width: 90vw;
-        max-width: 90svw;
+        max-width: 90dvw;
+        left: 50%;
+        top: 50%;
+        transform: translateX(-50%) translateY(-50%);
+        align-items: center;
+        justify-content: center;
+        height: fit-content;
+        width: 100%;
     }
-
-
 }
 
 /*portrait mode phones*/
@@ -361,10 +548,13 @@
         overflow: hidden;
         display: none;
         right: 0;
-        top: 50px;
-        aspect-ratio: 2 / 3;
         left: 50%;
-        transform: translateX(-50%);
+        top: 50%;
+        transform: translateX(-50%) translateY(-50%);
+        align-items: center;
+        justify-content: center;
+        height: fit-content;
+        width: 100%;
     }
 
     .drawer25pWidth {
@@ -373,10 +563,6 @@
 
     .drawer33pWidth {
         flex-basis: max(calc(100% / 2 - 10px), 180px);
-    }
-
-    .BGSampleTitle {
-        display: none;
     }
 
     .tag.excluded:after {
@@ -390,10 +576,6 @@
         width: 1.15em;
         flex-wrap: wrap;
         height: unset;
-    }
-
-    #extensionsMenuButton {
-        order: 1;
     }
 }
 
@@ -417,9 +599,9 @@
         min-height: unset;
         max-height: unset;
         width: 100vw;
-        width: 100svw;
+        width: 100dvw;
         height: calc(100vh - 36px);
-        height: calc(100svh - 36px);
+        height: calc(100dvh - 36px);
         padding-right: max(env(safe-area-inset-right), 0px);
         padding-left: max(env(safe-area-inset-left), 0px);
         padding-bottom: 0;
@@ -449,11 +631,11 @@
         top: 0;
         margin: 0 auto;
         height: calc(100vh - 70px);
-        height: calc(100svh - 70px);
-        width: calc(100% - 5px);
+        height: calc(100dvh - 70px);
+        width: calc(100dvw - 5px);
         max-height: calc(100vh - 70px);
-        max-height: calc(100svh - 70px);
-        max-width: calc(100% - 5px);
+        max-height: calc(100dvh - 70px);
+        max-width: calc(100dvw - 5px);
 
     }
 

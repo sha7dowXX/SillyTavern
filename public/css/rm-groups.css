@@ -6,6 +6,7 @@
     align-items: center;
 }
 
+#rm_group_chats_block .tag.filterByFolder,
 #rm_group_chats_block .tag.filterByGroups {
     display: none;
 }
@@ -58,14 +59,19 @@
     cursor: unset;
 }
 
+#rm_group_buttons textarea {
+    margin: 0px;
+    min-width: 200px;
+}
+
 #rm_group_members,
 #rm_group_add_members {
     margin-top: 0.25rem;
     margin-bottom: 0.5rem;
     border: 1px solid var(--SmartThemeBorderColor);
-    ;
     border-radius: 10px;
     background-color: var(--black30a);
+    padding: 2px;
 }
 
 #rm_group_buttons_expander {
@@ -82,7 +88,7 @@
 }
 
 #rm_group_members:empty::before {
-    content: 'Group is empty';
+    content: attr(group_empty_text);
 
     font-weight: bolder;
     width: 100%;
@@ -110,7 +116,7 @@
 }
 
 #rm_group_add_members:empty::before {
-    content: 'No characters available';
+    content: attr(no_characters_text);
 
     font-weight: bolder;
     width: 100%;
@@ -167,7 +173,7 @@
 #rm_group_members .group_member:not(.disabled) .right_menu_button[data-action="disable"] {
     opacity: 0.4;
     filter: brightness(0.5);
-    transition: all 0.2s ease-in-out;
+    transition: all var(--animation-duration-2x) ease-in-out;
 }
 
 /* #rm_group_members .right_menu_button[data-action="speak"]:hover, */
@@ -204,6 +210,14 @@
 
 .group_select:hover {
     background-color: var(--white30a);
+}
+
+.group_select.avatar {
+    padding: 0;
+}
+
+.group_select.missing-avatar.inline_avatar {
+    justify-content: center;
 }
 
 .group_select .avatar {

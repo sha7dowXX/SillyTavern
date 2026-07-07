@@ -11,7 +11,7 @@ class SileroTtsProvider {
     settings;
     ready = false;
     voices = [];
-    separator = ' .. ';
+    separator = ' ';
 
     defaultSettings = {
         provider_endpoint: 'http://localhost:8001/tts',
@@ -172,5 +172,4 @@ class SileroTtsProvider {
     async fetchTtsFromHistory(history_item_id) {
         return Promise.resolve(history_item_id);
     }
-
 }
