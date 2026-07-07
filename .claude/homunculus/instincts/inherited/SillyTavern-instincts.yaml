@@ -1,0 +1,538 @@
+# Instincts generated from https://github.com/sha7dowXX/SillyTavern
+# Generated: 2026-07-07T17:37:21.241Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: SillyTavern-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/sha7dowXX/SillyTavern
+---
+
+# SillyTavern Commit Length
+
+## Action
+
+Keep commit messages concise (~39 characters)
+
+## Evidence
+
+- Average commit message length: 39 chars
+- Based on 100 commits
+
+---
+id: SillyTavern-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/sha7dowXX/SillyTavern
+---
+
+# SillyTavern Naming Files
+
+## Action
+
+Use PascalCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: PascalCase
+
+---
+id: SillyTavern-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/sha7dowXX/SillyTavern
+---
+
+# SillyTavern Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: SillyTavern-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/sha7dowXX/SillyTavern
+---
+
+# SillyTavern Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: SillyTavern-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/sha7dowXX/SillyTavern
+---
+
+# SillyTavern Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: SillyTavern-workflow-feature-development
+trigger: "when implementing a new feature"
+confidence: 0.7
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/sha7dowXX/SillyTavern
+---
+
+# SillyTavern Workflow Feature Development
+
+## Action
+
+Follow the feature-development workflow:
+1. Add feature implementation
+2. Add tests for feature
+3. Update documentation
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~4x per month
+- Files: 
+
+---
+id: SillyTavern-workflow-update-i18n-and-index-html-for-translation
+trigger: "when doing update i18n and index html for translation"
+confidence: 0.65
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/sha7dowXX/SillyTavern
+---
+
+# SillyTavern Workflow Update I18n And Index Html For Translation
+
+## Action
+
+Follow the update-i18n-and-index-html-for-translation workflow:
+1. Edit public/i18n.json to add or update translation keys/values.
+2. Edit public/index.html to ensure UI elements are compatible with translations or to fix translation-related display issues.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~3x per month
+- Files: public/i18n.json, public/index.html
+
+---
+id: SillyTavern-workflow-add-or-update-extension-module
+trigger: "when doing add or update extension module"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/sha7dowXX/SillyTavern
+---
+
+# SillyTavern Workflow Add Or Update Extension Module
+
+## Action
+
+Follow the add-or-update-extension-module workflow:
+1. Create or edit JS file(s) in public/scripts/extensions/<module>/
+2. Optionally create or edit HTML/CSS files for the extension's UI
+3. Update any related manifest or settings files if needed
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: public/scripts/extensions/*/index.js, public/scripts/extensions/*/*.html, public/scripts/extensions/*/*.css
+
+---
+id: SillyTavern-workflow-update-package-dependencies
+trigger: "when doing update package dependencies"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/sha7dowXX/SillyTavern
+---
+
+# SillyTavern Workflow Update Package Dependencies
+
+## Action
+
+Follow the update-package-dependencies workflow:
+1. Edit package.json to update/add/remove dependencies.
+2. Regenerate package-lock.json to lock versions.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: package.json, package-lock.json
+
+---
+id: SillyTavern-workflow-add-or-update-backend-endpoint
+trigger: "when doing add or update backend endpoint"
+confidence: 0.65
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/sha7dowXX/SillyTavern
+---
+
+# SillyTavern Workflow Add Or Update Backend Endpoint
+
+## Action
+
+Follow the add-or-update-backend-endpoint workflow:
+1. Edit or create JS files in src/endpoints/backends/ or src/endpoints/
+2. Optionally update related frontend files if new data/fields are exposed
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~3x per month
+- Files: src/endpoints/backends/*.js, src/endpoints/*.js
+
+---
+id: SillyTavern-workflow-merge-release-or-staging-into-feature-branch
+trigger: "when doing merge release or staging into feature branch"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/sha7dowXX/SillyTavern
+---
+
+# SillyTavern Workflow Merge Release Or Staging Into Feature Branch
+
+## Action
+
+Follow the merge-release-or-staging-into-feature-branch workflow:
+1. Merge release or staging branch into the current feature branch.
+2. Resolve any merge conflicts.
+3. Update affected files as needed.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: .github/workflows/*.yml, Dockerfile, package.json
+
+---
+id: sillytavern-instinct-file-naming
+trigger: "When creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: sha7dowXX/SillyTavern
+---
+
+# Sillytavern Instinct File Naming
+
+## Action
+
+Name files using PascalCase
+
+## Evidence
+
+- Pattern in namingConventions.files: PascalCase
+
+---
+id: sillytavern-instinct-function-naming
+trigger: "When defining a new function"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: sha7dowXX/SillyTavern
+---
+
+# Sillytavern Instinct Function Naming
+
+## Action
+
+Name functions using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.functions: camelCase
+
+---
+id: sillytavern-instinct-class-naming
+trigger: "When defining a new class"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: sha7dowXX/SillyTavern
+---
+
+# Sillytavern Instinct Class Naming
+
+## Action
+
+Name classes using PascalCase
+
+## Evidence
+
+- Pattern in namingConventions.classes: PascalCase
+
+---
+id: sillytavern-instinct-constant-naming
+trigger: "When defining a constant"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: sha7dowXX/SillyTavern
+---
+
+# Sillytavern Instinct Constant Naming
+
+## Action
+
+Name constants using SCREAMING_SNAKE_CASE
+
+## Evidence
+
+- Pattern in namingConventions.constants: SCREAMING_SNAKE_CASE
+
+---
+id: sillytavern-instinct-import-style
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: sha7dowXX/SillyTavern
+---
+
+# Sillytavern Instinct Import Style
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- Pattern in importStyle: relative
+
+---
+id: sillytavern-instinct-export-style
+trigger: "When exporting modules or functions"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: sha7dowXX/SillyTavern
+---
+
+# Sillytavern Instinct Export Style
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in exportStyle: named
+
+---
+id: sillytavern-instinct-test-location
+trigger: "When adding new tests"
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: sha7dowXX/SillyTavern
+---
+
+# Sillytavern Instinct Test Location
+
+## Action
+
+Place test files in a separate test directory
+
+## Evidence
+
+- Pattern in architecture.testLocation: separate
+
+---
+id: sillytavern-instinct-test-sequence
+trigger: "When implementing a new feature"
+confidence: 0.75
+domain: testing
+source: repo-analysis
+source_repo: sha7dowXX/SillyTavern
+---
+
+# Sillytavern Instinct Test Sequence
+
+## Action
+
+Add tests for the feature after implementation and before documentation updates
+
+## Evidence
+
+- feature-development workflow: Add tests for feature after implementation
+
+---
+id: sillytavern-instinct-commit-format
+trigger: "When writing a commit message"
+confidence: 0.8
+domain: git
+source: repo-analysis
+source_repo: sha7dowXX/SillyTavern
+---
+
+# Sillytavern Instinct Commit Format
+
+## Action
+
+Write concise, freeform commit messages without prefixes or ticket numbers
+
+## Evidence
+
+- Pattern in commits: freeform, no prefixes, averageLength: 39
+- Examples: 'Update tiktoken package', 'Regex import/export'
+
+---
+id: sillytavern-instinct-commit-scope
+trigger: "When committing changes"
+confidence: 0.8
+domain: git
+source: repo-analysis
+source_repo: sha7dowXX/SillyTavern
+---
+
+# Sillytavern Instinct Commit Scope
+
+## Action
+
+Make each commit focused on a single logical change
+
+## Evidence
+
+- Pattern in commit examples: each commit addresses a single issue or feature
+
+---
+id: sillytavern-instinct-update-i18n
+trigger: "When someone wants to add or improve language translations in the UI"
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: sha7dowXX/SillyTavern
+---
+
+# Sillytavern Instinct Update I18n
+
+## Action
+
+Edit public/i18n.json and public/index.html to update translations and ensure UI compatibility
+
+## Evidence
+
+- update-i18n-and-index-html-for-translation workflow
+- Files: public/i18n.json, public/index.html
+
+---
+id: sillytavern-instinct-add-extension
+trigger: "When someone wants to add a new extension or improve an existing extension's functionality"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: sha7dowXX/SillyTavern
+---
+
+# Sillytavern Instinct Add Extension
+
+## Action
+
+Create or edit JS, HTML, and CSS files in public/scripts/extensions/<module>/
+
+## Evidence
+
+- add-or-update-extension-module workflow
+- Files: public/scripts/extensions/*/index.js, *.html, *.css
+
+---
+id: sillytavern-instinct-update-deps
+trigger: "When someone wants to update or add a package dependency"
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: sha7dowXX/SillyTavern
+---
+
+# Sillytavern Instinct Update Deps
+
+## Action
+
+Edit package.json and regenerate package-lock.json
+
+## Evidence
+
+- update-package-dependencies workflow
+- Files: package.json, package-lock.json
+
+---
+id: sillytavern-instinct-add-endpoint
+trigger: "When someone wants to add a new backend feature or fix an API bug"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: sha7dowXX/SillyTavern
+---
+
+# Sillytavern Instinct Add Endpoint
+
+## Action
+
+Edit or create JS files in src/endpoints/backends/ or src/endpoints/
+
+## Evidence
+
+- add-or-update-backend-endpoint workflow
+- Files: src/endpoints/backends/*.js, src/endpoints/*.js
+
+---
+id: sillytavern-instinct-merge-upstream
+trigger: "When someone wants to update their feature branch with the latest upstream changes"
+confidence: 0.85
+domain: workflow
+source: repo-analysis
+source_repo: sha7dowXX/SillyTavern
+---
+
+# Sillytavern Instinct Merge Upstream
+
+## Action
+
+Merge release or staging branch into the current feature branch and resolve conflicts
+
+## Evidence
+
+- merge-release-or-staging-into-feature-branch workflow
+- Files: .github/workflows/*.yml, Dockerfile, package.json, etc.
+
